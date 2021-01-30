@@ -1,3 +1,5 @@
+use rayon::prelude::*;
+
 const PI: f64 = std::f64::consts::PI;
 const E: f64 = std::f64::consts::E;
 
@@ -74,6 +76,7 @@ pub fn mode(zj: u32, n: u32, m: u32, n_xy: usize) -> Vec<f64> {
     let d = 2f64 / (n_xy - 1) as f64;
     let h = ((n_xy - 1) / 2) as f64;
     (0..n_xy * n_xy)
+        .into_par_iter()
         .map(|k| {
             let i = (k / n_xy) as f64 - h;
             let j = (k % n_xy) as f64 - h;
@@ -92,9 +95,9 @@ pub fn mode(zj: u32, n: u32, m: u32, n_xy: usize) -> Vec<f64> {
 /// A complete set of `n_radial_order` Zernike modes on a regular grid n_xy X n_xy
 pub fn mode_set(n_radial_order: u32, n_xy: usize) -> Vec<f64> {
     let (j, n, m) = jnm(n_radial_order);
-    j.iter()
-        .zip(n.iter().zip(m.iter()))
-        .flat_map(|(&j, (&n, &m))| mode(j, n, m, n_xy))
+    j.into_par_iter()
+        .zip(n.into_par_iter().zip(m.into_par_iter()))
+        .flat_map(|(j, (n, m))| mode(j, n, m, n_xy))
         .collect()
 }
 /// A complete set of `n_radial_order` orthonormalized Zernike modes on a regular grid n_xy X n_xy using the modified Gram-Schmidt algorithm
@@ -112,11 +115,7 @@ pub fn mgs_mode_set(n_radial_order: u32, n_xy: usize) -> Vec<f64> {
         .map(|x| x.to_vec())
         .collect();
     // Returns the dot product: x.y
-    let dot = |x: &[f64], y: &[f64]| {
-        x.iter()
-            .zip(y.iter())
-            .fold(0f64, |a, (x, y)| a + x * y)
-    };
+    let dot = |x: &[f64], y: &[f64]| x.iter().zip(y.iter()).fold(0f64, |a, (x, y)| a + x * y);
     // v1.v1
     let nrm = dot(&v[0], &v[0]).sqrt();
     // u1 = v1/v1.v1

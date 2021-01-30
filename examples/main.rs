@@ -1,9 +1,10 @@
 use plotters::prelude::*;
 use zernike;
+use std::time::Instant;
 
 fn main() {
     let n_xy = 501;
-    let n_radial_order = 11;
+    let n_radial_order = 21;
     let (j, n, m) = zernike::jnm(n_radial_order);
     println!("{:2} {:2} {:2}", "n", "m", "j");
     let d = 2f64 / (n_xy - 1) as f64;
@@ -20,7 +21,10 @@ fn main() {
     (0..j.len()).for_each(|k| println!("{:2} {:2} {:2}", n[k], m[k], j[k]));
 
     {
+        println!("Computing Zernike mode set ...");
+        let now = Instant::now();
         let zern = zernike::mode_set(n_radial_order, n_xy);
+        println!(" ... in {:.3}s",now.elapsed().as_secs_f64());
         zern.chunks(n_xy * n_xy).enumerate().for_each(|(k, z)| {
             let filename = format!("examples/zernike_{}.png", j[k]);
             let plot =
@@ -42,7 +46,10 @@ fn main() {
         });
     }
     {
+        println!("Computing modified Gram-Schmidt Zernike mode set ...");
+        let now = Instant::now();
         let zern = zernike::mgs_mode_set(n_radial_order, n_xy);
+        println!(" ... in {:.3}s",now.elapsed().as_secs_f64());
         zern.chunks(n_xy * n_xy).enumerate().for_each(|(k, z)| {
             let filename = format!("examples/msg_zernike_{}.png", j[k]);
             let plot =
