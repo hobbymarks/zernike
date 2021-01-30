@@ -157,7 +157,7 @@ pub fn mgs_mode_set(n_radial_order: u32, n_xy: usize) -> Vec<f64> {
         u[i].iter_mut().zip(v[i].iter()).for_each(|(u, v)| {
             *u = *v;
         });
-        (0..i - 1).for_each(|j| {
+        (0..i).for_each(|j| {
             // uj.ui/uj.uj
             let r = dot(&u[j], &u[i]) / dot(&u[j], &u[j]);
             // ui = ui - (uj.ui/uj.uj)vj
