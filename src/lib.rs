@@ -48,7 +48,7 @@ fn ln_gamma(f64: f64) -> f64 {
             + (x - 0.5) * ((x - 0.5 + gamma_r) / std::f64::consts::E).ln()
     }
 }
-pub fn gamma(x: f64) -> f64 {
+fn gamma(x: f64) -> f64 {
     ln_gamma(x).exp()
 }
 /// Zernike radial function
