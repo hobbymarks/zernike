@@ -97,6 +97,7 @@ pub fn mode_set(n_radial_order: u32, n_xy: usize) -> Vec<f64> {
         .flat_map(|(&j, (&n, &m))| mode(j, n, m, n_xy))
         .collect()
 }
+/// A complete set of `n_radial_order` orthonormalized Zernike modes on a regular grid n_xy X n_xy using the modified Gram-Schmidt algorithm
 pub fn mgs_mode_set(n_radial_order: u32, n_xy: usize) -> Vec<f64> {
     let n = n_xy * n_xy;
     let nz = n_radial_order * (n_radial_order + 1) / 2;
