@@ -1,3 +1,33 @@
+//! Zernike polynomials
+
+//! Computes the Zernike polynomials according to the following ordering:
+//!
+//! | n | m | j |
+//! |---|---|---|
+//! | 0 | 0 | 1 |
+//! | 1 | 1 | 2 |
+//! | 1 | 1 | 3 |
+//! | 2 | 0 | 4 |
+//! | 2 | 2 | 5 |
+//! | 2 | 2 | 6 |
+//! | 3 | 1 | 7 |
+//! | 3 | 1 | 8 |
+//! | 3 | 3 | 9 |
+//! | 3 | 3 |10 |
+//! | 4 | 0 |11 |
+//! | 4 | 2 |12 |
+//! | 4 | 2 |13 |
+//! | 4 | 4 |14 |
+//! | 4 | 4 |15 |
+//! | 5 | 1 |16 |
+//! | 5 | 1 |17 |
+//! | 5 | 3 |18 |
+//! | 5 | 3 |19 |
+//! | 5 | 5 |20 |
+//! | 5 | 5 |21 |
+//!
+//! where n, m, and j are the radial order, the azimuthal order and the polynomial index, respectively
+
 use rayon::prelude::*;
 
 const PI: f64 = std::f64::consts::PI;
@@ -67,7 +97,7 @@ fn azimuthal(j: u32, m: u32, o: f64) -> f64 {
     let nkr = if m == 0 { 0f64 } else { 1f64 };
     2f64.powf(0.5 * nkr) * (m as f64 * o + nkr * ((-1f64).powf(j as f64) - 1f64) * PI * 0.25).cos()
 }
-/// Zernike function
+/// Returns the Zernike polynomial (j,n,m) value at the polar coordinates (o,r)
 pub fn zernike(j: u32, n: u32, m: u32, r: f64, o: f64) -> f64 {
     radial(n, m, r) * azimuthal(j, m, o)
 }

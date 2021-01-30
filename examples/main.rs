@@ -4,7 +4,7 @@ use std::time::Instant;
 
 fn main() {
     let n_xy = 501;
-    let n_radial_order = 21;
+    let n_radial_order = 11;
     let (j, n, m) = zernike::jnm(n_radial_order);
     println!("{:2} {:2} {:2}", "n", "m", "j");
     let d = 2f64 / (n_xy - 1) as f64;
