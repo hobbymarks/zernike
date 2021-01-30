@@ -53,7 +53,7 @@ pub fn gamma(x: f64) -> f64 {
 }
 /// Zernike radial function
 fn radial(n: u32, m: u32, r: f64) -> f64 {
-    (0..(n - m) / 2+1).fold(0f64, |a, k| {
+    (0..(n - m) / 2 + 1).fold(0f64, |a, k| {
         a + (-1f64).powf(k as f64) * gamma((n - k + 1) as f64) * r.powf((n - 2 * k) as f64)
             / (gamma((k + 1) as f64)
                 * gamma(((n + m) / 2 - k + 1) as f64)
@@ -96,6 +96,43 @@ pub fn mode_set(n_radial_order: u32, n_xy: usize) -> Vec<f64> {
         .zip(n.iter().zip(m.iter()))
         .flat_map(|(&j, (&n, &m))| mode(j, n, m, n_xy))
         .collect()
+}
+pub fn mgs_mode_set(n_radial_order: u32, n_xy: usize) -> Vec<f64> {
+    let n = n_xy * n_xy;
+    let nz = n_radial_order * (n_radial_order + 1) / 2;
+    let v: Vec<Vec<f64>> = mode_set(n_radial_order, n_xy)
+        .chunks(n)
+        .map(|x| x.to_vec())
+        .collect();
+    let mut u: Vec<Vec<f64>> = vec![0f64; n * nz as usize]
+        .chunks(n)
+        .map(|x| x.to_vec())
+        .collect();
+    let norm = |x: &[f64], y: &[f64]| {
+        x.iter()
+            .zip(y.iter())
+            .fold(0f64, |a, (x, y)| a + x * y)
+    };
+    let nrm = norm(&v[0], &v[0]).sqrt();
+    u[0].iter_mut().zip(v[0].iter()).for_each(|(u, v)| {
+        *u = v / nrm;
+    });
+    (1..nz as usize).for_each(|i| {
+        u[i].iter_mut().zip(v[i].iter()).for_each(|(u, v)| {
+            *u = *v;
+        });
+        (0..i - 1).for_each(|j| {
+            let r = norm(&u[j], &u[i]) / norm(&u[j], &u[j]);
+            u[i].iter_mut().zip(v[j].iter()).for_each(|(u, v)| {
+                *u -= r * v;
+            });
+            let nrm = norm(&v[i], &v[i]).sqrt();
+            u[i].iter_mut().for_each(|u| {
+                *u /= nrm;
+            });
+        });
+    });
+    u.iter().flat_map(|x| x.to_vec()).collect()
 }
 /// Returns the Zernike indices `(j,n,m)` for the first `n_radial_order`s
 pub fn jnm(n_radial_order: u32) -> (Vec<u32>, Vec<u32>, Vec<u32>) {
