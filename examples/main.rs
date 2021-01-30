@@ -3,59 +3,65 @@ use rayon::prelude::*;
 use std::time::Instant;
 use zernike;
 
-
 fn correlation(n_radial_order: u32, n_xy: usize, zern: &[f64], filename: &str) {
-        println!("Computing correlation matrix ...");
+    println!("Computing correlation matrix ...");
     let now = Instant::now();
-        let nz = (n_radial_order * (n_radial_order + 1) / 2) as usize;
-        let v: Vec<Vec<f64>> = zern.chunks(n_xy * n_xy).map(|x| x.to_vec()).collect();
-        let dot = |x: &[f64], y: &[f64]| x.iter().zip(y.iter()).fold(0f64, |a, (x, y)| a + x * y);
-        let corr: Vec<Vec<u8>> = (0..nz)
-            .into_par_iter()
-            .map(|i| {
-                (0..nz)
-                    .into_par_iter()
-                    .map(|j| {
-                        if i == j {
-                            0
+    let nz = (n_radial_order * (n_radial_order + 1) / 2) as usize;
+    let v: Vec<Vec<f64>> = zern.chunks(n_xy * n_xy).map(|x| x.to_vec()).collect();
+    let dot = |x: &[f64], y: &[f64]| x.iter().zip(y.iter()).fold(0f64, |a, (x, y)| a + x * y);
+    let corr: Vec<Vec<u8>> = (0..nz)
+        .into_par_iter()
+        .map(|i| {
+            (0..nz)
+                .into_par_iter()
+                .map(|j| {
+                    if i == j {
+                        0
+                    } else {
+                        let r = dot(&v[i], &v[j])
+                            / (dot(&v[i], &v[i]).sqrt() * dot(&v[j], &v[j]).sqrt());
+                        if r.abs() > 1e-6 {
+                            1
                         } else {
-                            let r = dot(&v[i], &v[j])
-                                / (dot(&v[i], &v[i]).sqrt() * dot(&v[j], &v[j]).sqrt());
-                            if r.abs() > 1e-6 {
-                                1
-                            } else {
-                                0
-                            }
+                            0
                         }
-                    })
-                    .collect()
-            })
-            .collect();
-        println!(" ... in {:.3}s", now.elapsed().as_secs_f64());
+                    }
+                })
+                .collect()
+        })
+        .collect();
+    println!(" ... in {:.3}s", now.elapsed().as_secs_f64());
 
-        let plot = BitMapBackend::new(&filename, (1024, 1024)).into_drawing_area();
-        plot.fill(&WHITE).unwrap();
-        let mut chart = ChartBuilder::on(&plot)
-            .build_cartesian_2d(0..nz as i32, 0..nz as i32)
-            .unwrap();
-        chart
-            .draw_series(
-                corr.iter()
-                    .zip(0..)
-                    .map(|(l, y)| l.iter().zip(0..).map(move |(v, x)| (x as i32, y as i32, v)))
-                    .flatten()
-                    .map(|(x, y, v)| {
-                        Rectangle::new(
-                            [(x, y), (x + 1, y + 1)],
-                            if *v==0 {BLACK.filled()} else {WHITE.filled()}
-                        )
-                    }),
-            )
-            .unwrap();
-    }    
+    let trace_corr = (0..nz).fold(0f64, |a, i| a + dot(&v[i], &v[i]).sqrt());
+    println!("Trace[C]: {}", trace_corr);
+
+    let plot = BitMapBackend::new(&filename, (1024, 1024)).into_drawing_area();
+    plot.fill(&WHITE).unwrap();
+    let mut chart = ChartBuilder::on(&plot)
+        .build_cartesian_2d(0..nz as i32, 0..nz as i32)
+        .unwrap();
+    chart
+        .draw_series(
+            corr.iter()
+                .zip(0..)
+                .map(|(l, y)| l.iter().zip(0..).map(move |(v, x)| (x as i32, y as i32, v)))
+                .flatten()
+                .map(|(x, y, v)| {
+                    Rectangle::new(
+                        [(x, y), (x + 1, y + 1)],
+                        if *v == 0 {
+                            BLACK.filled()
+                        } else {
+                            WHITE.filled()
+                        },
+                    )
+                }),
+        )
+        .unwrap();
+}
 
 fn main() {
-    let n_xy = 201;
+    let n_xy = 401;
     let n_radial_order = 21;
     let (j, n, m) = zernike::jnm(n_radial_order);
     println!("{:2} {:2} {:2}", "n", "m", "j");
@@ -98,7 +104,12 @@ fn main() {
             })
         });
 
-        correlation(n_radial_order, n_xy, &zern, "examples/zernike_correlation.png");
+        correlation(
+            n_radial_order,
+            n_xy,
+            &zern,
+            "examples/zernike_correlation.png",
+        );
     }
 
     {
@@ -126,7 +137,11 @@ fn main() {
             })
         });
 
-        correlation(n_radial_order, n_xy, &zern, "examples/mgs_zernike_correlation.png");
+        correlation(
+            n_radial_order,
+            n_xy,
+            &zern,
+            "examples/mgs_zernike_correlation.png",
+        );
     }
 }
-
