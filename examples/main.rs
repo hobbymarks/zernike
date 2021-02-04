@@ -62,7 +62,7 @@ fn correlation(n_radial_order: u32, n_xy: usize, zern: &[f64], filename: &str) {
 
 fn main() {
     let n_xy = 401;
-    let n_radial_order = 21;
+    let n_radial_order = 6;
     let (j, n, m) = zernike::jnm(n_radial_order);
     println!("{:2} {:2} {:2}", "n", "m", "j");
     let d = 2f64 / (n_xy - 1) as f64;
@@ -76,7 +76,9 @@ fn main() {
             (x, y)
         })
         .collect();
-    (0..j.len()).for_each(|k| println!("{:2} {:2} {:2}", n[k], m[k], j[k]));
+    println!("j: {:2?}",j);
+    println!("n: {:2?}",n);
+    println!("m: {:2?}",m);
 
     {
         println!("Computing Zernike mode set ...");

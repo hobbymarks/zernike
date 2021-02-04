@@ -1,30 +1,11 @@
 //! # Zernike polynomials
 
-//! Computes the Zernike polynomials according to the following ordering:
+//! Computes the Zernike polynomials according to [Noll](https://www.osapublishing.org/josa/abstract.cfm?uri=josa-66-3-207) ordering:
 //!
-//! | n | m | j |
-//! |---|---|---|
-//! | 0 | 0 | 1 |
-//! | 1 | 1 | 2 |
-//! | 1 | 1 | 3 |
-//! | 2 | 0 | 4 |
-//! | 2 | 2 | 5 |
-//! | 2 | 2 | 6 |
-//! | 3 | 1 | 7 |
-//! | 3 | 1 | 8 |
-//! | 3 | 3 | 9 |
-//! | 3 | 3 |10 |
-//! | 4 | 0 |11 |
-//! | 4 | 2 |12 |
-//! | 4 | 2 |13 |
-//! | 4 | 4 |14 |
-//! | 4 | 4 |15 |
-//! | 5 | 1 |16 |
-//! | 5 | 1 |17 |
-//! | 5 | 3 |18 |
-//! | 5 | 3 |19 |
-//! | 5 | 5 |20 |
-//! | 5 | 5 |21 |
+//! | j | 1 |  2 |  3 |  4 |  5 |  6 |  7 |  8 |  9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | ... |
+//! | - | - |  - |  - |  - |  - |  - |  - |  - |  - |  - |  - |  - |  - |  - |  - |  - |  - |  - |  - |  - |  - | --- |
+//! | n | 0 |  1 |  1 |  2 |  2 |  2 |  3 |  3 |  3 |  3 |  4 |  4 |  4 |  4 |  4 |  5 |  5 |  5 |  5 |  5 |  5 | ... |
+//! | m | 0 |  1 |  1 |  0 |  2 |  2 |  1 |  1 |  3 |  3 |  0 |  2 |  2 |  4 |  4 |  1 |  1 |  3 |  3 |  5 |  5 | ... |
 //!
 //! where n, m, and j are the radial order, the azimuthal order and the polynomial index, respectively
 
