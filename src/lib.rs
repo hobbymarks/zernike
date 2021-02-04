@@ -1,4 +1,4 @@
-//! Zernike polynomials
+//! # Zernike polynomials
 
 //! Computes the Zernike polynomials according to the following ordering:
 //!
@@ -197,7 +197,8 @@ pub fn projection(surface: &[f64], n_radial_order: u32, n_xy: usize) -> Vec<f64>
     u[0].iter_mut().zip(v[0].iter()).for_each(|(u, v)| {
         *u = v / nrm;
     });
-    (1..nz as usize).map(|i| {
+    let mut c = vec![dot(surface, &u[0])];
+    c.extend((1..nz as usize).map(|i| {
         // ui = vi
         u[i].iter_mut().zip(v[i].iter()).for_each(|(u, v)| {
             *u = *v;
@@ -213,17 +214,16 @@ pub fn projection(surface: &[f64], n_radial_order: u32, n_xy: usize) -> Vec<f64>
         });
         // ui.ui
         let nrm = dot(&u[i], &u[i]).sqrt();
-        // s.ui
-        let s_dot_ui = dot(surface, &u[i]).sqrt();
-        s_dot_ui/nrm
-    }).collect()
+        dot(surface, &u[i])/nrm
+    }));
+    c
 }
 /// Returns the Zernike indices `(j,n,m)` for the first `n_radial_order`s
 pub fn jnm(n_radial_order: u32) -> (Vec<u32>, Vec<u32>, Vec<u32>) {
     let mut j: Vec<u32> = vec![];
     let mut n: Vec<u32> = vec![];
     let mut m: Vec<u32> = vec![];
-    (1..=n_radial_order).for_each(|nro| {
+    (1..=n_radial_order).into_iter().for_each(|nro| {
         (0..nro).step_by(2).for_each(|k| {
             let odd_even = (nro - 1) % 2;
             let j_last = 1 + j.last().or(Some(&0u32)).unwrap();
