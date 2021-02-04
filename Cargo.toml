@@ -5,6 +5,7 @@ authors = ["Rod Conan <rconan@gmto.org>"]
 license = "MIT/Apache-2.0"
 description = "Routines to compute the Zernike polynomials"
 repository = "https://github.com/rconan/zernike"
+documentation = "http://docs.rs/zernike"
 keywords = ["Zernike", "polynomials"]
 edition = "2018"
 
