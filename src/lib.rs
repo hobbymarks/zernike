@@ -103,6 +103,8 @@ pub fn mode(zj: u32, n: u32, m: u32, n_xy: usize) -> Vec<f64> {
         })
         .collect()
 }
+/// Zernike polynomial set
+///
 /// A complete set of `n_radial_order` Zernike modes on a regular grid n_xy X n_xy
 pub fn mode_set(n_radial_order: u32, n_xy: usize) -> Vec<f64> {
     let (j, n, m) = jnm(n_radial_order);
@@ -111,6 +113,8 @@ pub fn mode_set(n_radial_order: u32, n_xy: usize) -> Vec<f64> {
         .flat_map(|(j, (n, m))| mode(j, n, m, n_xy))
         .collect()
 }
+/// Orthonormal Zernike set
+///
 /// A complete set of `n_radial_order` orthonormalized Zernike modes on a regular grid n_xy X n_xy using the modified Gram-Schmidt algorithm
 pub fn mgs_mode_set(n_radial_order: u32, n_xy: usize) -> Vec<f64> {
     let n = n_xy * n_xy;
@@ -156,6 +160,147 @@ pub fn mgs_mode_set(n_radial_order: u32, n_xy: usize) -> Vec<f64> {
     });
     u.iter().flat_map(|x| x.to_vec()).collect()
 }
+/// Orthonormal Zernike set
+///
+/// A complete set of `n_radial_order` orthonormalized Zernike modes on a regular grid n_xy X n_xy using the modified Gram-Schmidt algorithm, the modes are orthonormal on the `mask` defined with NaN values
+pub fn mgs_mode_set_on_mask(n_radial_order: u32, n_xy: usize, mask: &[f64]) -> Vec<f64> {
+    let n = n_xy * n_xy;
+    let nz = n_radial_order * (n_radial_order + 1) / 2;
+    // v: Zernike modes
+    let v: Vec<Vec<f64>> = mode_set(n_radial_order, n_xy)
+        .chunks(n)
+        .map(|x| {
+            x.iter()
+                .zip(mask)
+                .filter(|(_, m)| !m.is_nan())
+                .map(|(x, _)| *x)
+                .collect()
+        })
+        .collect();
+    // u: orthonormal basis
+    let mut u: Vec<Vec<f64>> = vec![0f64; n * nz as usize]
+        .chunks(n)
+        .map(|x| {
+            x.iter()
+                .zip(mask)
+                .filter(|(_, m)| !m.is_nan())
+                .map(|(x, _)| *x)
+                .collect()
+        })
+        .collect();
+    // Returns the dot product: x.y
+    let dot = |x: &[f64], y: &[f64]| x.iter().zip(y.iter()).fold(0f64, |a, (x, y)| a + x * y);
+    // v1.v1
+    let nrm = dot(&v[0], &v[0]).sqrt();
+    // u1 = v1/v1.v1
+    u[0].iter_mut().zip(v[0].iter()).for_each(|(u, v)| {
+        *u = v / nrm;
+    });
+    (1..nz as usize).for_each(|i| {
+        // ui = vi
+        u[i].iter_mut().zip(v[i].iter()).for_each(|(u, v)| {
+            *u = *v;
+        });
+        (0..i).for_each(|j| {
+            // uj.ui/uj.uj
+            let r = dot(&u[j], &u[i]) / dot(&u[j], &u[j]);
+            // ui = ui - (uj.ui/uj.uj)vj
+            let uj = u[j].clone();
+            u[i].iter_mut().zip(uj.iter()).for_each(|(ui, uj)| {
+                *ui -= r * *uj;
+            });
+        });
+        // ui.ui
+        let nrm = dot(&u[i], &u[i]).sqrt();
+        // ui = ui/ui.ui
+        u[i].iter_mut().for_each(|u| {
+            *u /= nrm;
+        });
+    });
+    let mut v: Vec<Vec<f64>> = vec![vec![f64::NAN; n]; nz as usize];
+    v.iter_mut().zip(u).for_each(|(v, u)| {
+        v.iter_mut()
+            .zip(mask)
+            .filter(|(_, m)| !m.is_nan())
+            .map(|(x, _)| x)
+            .zip(u)
+            .for_each(|(x, u)| {
+                *x = u;
+            })
+    });
+    v.iter().flat_map(|x| x.to_vec()).collect()
+}
+/// Surface decomposition
+///
+/// Returns the coefficients resulting of the projection of a surface on a complete set of `n_radial_order` orthonormalized Zernike modes defined on a regular grid n_xy X n_xy using the modified Gram-Schmidt algorithm, the surface is valid only on the `mask` defined with NaN values
+pub fn projection_on_mask(
+    surface: &[f64],
+    n_radial_order: u32,
+    n_xy: usize,
+    mask: &[f64],
+) -> Vec<f64> {
+    let n = n_xy * n_xy;
+    let nz = n_radial_order * (n_radial_order + 1) / 2;
+    // v: Zernike modes
+    let v: Vec<Vec<f64>> = mode_set(n_radial_order, n_xy)
+        .chunks(n)
+        .map(|x| {
+            x.iter()
+                .zip(mask)
+                .filter(|(_, m)| !m.is_nan())
+                .map(|(x, _)| *x)
+                .collect()
+        })
+        .collect();
+    // u: orthonormal basis
+    let mut u: Vec<Vec<f64>> = vec![0f64; n * nz as usize]
+        .chunks(n)
+        .map(|x| {
+            x.iter()
+                .zip(mask)
+                .filter(|(_, m)| !m.is_nan())
+                .map(|(x, _)| *x)
+                .collect()
+        })
+        .collect();
+    // surface reduced to mask
+    let surface: Vec<_> = surface
+        .iter()
+        .zip(mask)
+        .filter(|(_, m)| !m.is_nan())
+        .map(|(x, _)| *x)
+        .collect();
+    // Returns the dot product: x.y
+    let dot = |x: &[f64], y: &[f64]| x.iter().zip(y.iter()).fold(0f64, |a, (x, y)| a + x * y);
+    // v1.v1
+    let nrm = dot(&v[0], &v[0]).sqrt();
+    // u1 = v1/v1.v1
+    u[0].iter_mut().zip(v[0].iter()).for_each(|(u, v)| {
+        *u = v / nrm;
+    });
+    let mut c = vec![dot(&surface, &u[0])];
+    c.extend((1..nz as usize).map(|i| {
+        // ui = vi
+        u[i].iter_mut().zip(v[i].iter()).for_each(|(u, v)| {
+            *u = *v;
+        });
+        (0..i).for_each(|j| {
+            // uj.ui/uj.uj
+            let r = dot(&u[j], &u[i]) / dot(&u[j], &u[j]);
+            // ui = ui - (uj.ui/uj.uj)vj
+            let uj = u[j].clone();
+            u[i].iter_mut().zip(uj.iter()).for_each(|(ui, uj)| {
+                *ui -= r * *uj;
+            });
+        });
+        // ui.ui
+        let nrm = dot(&u[i], &u[i]).sqrt();
+        dot(&surface, &u[i]) / nrm
+    }));
+    c
+}
+/// Surface decomposition
+///
 /// Returns the coefficients resulting of the projection of a surface on a complete set of `n_radial_order` orthonormalized Zernike modes defined on a regular grid n_xy X n_xy using the modified Gram-Schmidt algorithm
 pub fn projection(surface: &[f64], n_radial_order: u32, n_xy: usize) -> Vec<f64> {
     let n = n_xy * n_xy;
@@ -195,7 +340,7 @@ pub fn projection(surface: &[f64], n_radial_order: u32, n_xy: usize) -> Vec<f64>
         });
         // ui.ui
         let nrm = dot(&u[i], &u[i]).sqrt();
-        dot(surface, &u[i])/nrm
+        dot(surface, &u[i]) / nrm
     }));
     c
 }
