@@ -115,11 +115,8 @@ pub fn mode_set(n_radial_order: u32, n_xy: usize) -> Vec<f64> {
 }
 /// Gram-schmidt ortho-normalization
 pub fn gram_schmidt(modes: &[f64], n_mode: usize) -> Vec<f64> {
-    let n = modes.len()/n_mode;
-    let v: Vec<Vec<f64>> = modes
-        .chunks(n)
-        .map(|x| x.to_vec())
-        .collect();
+    let n = modes.len() / n_mode;
+    let v: Vec<Vec<f64>> = modes.chunks(n).map(|x| x.to_vec()).collect();
     // u: orthonormal basis
     let mut u: Vec<Vec<f64>> = vec![0f64; n * n_mode as usize]
         .chunks(n)
@@ -127,6 +124,45 @@ pub fn gram_schmidt(modes: &[f64], n_mode: usize) -> Vec<f64> {
         .collect();
     // Returns the dot product: x.y
     let dot = |x: &[f64], y: &[f64]| x.iter().zip(y.iter()).fold(0f64, |a, (x, y)| a + x * y);
+    // v1.v1
+    let nrm = dot(&v[0], &v[0]).sqrt();
+    // u1 = v1/v1.v1
+    u[0].iter_mut().zip(v[0].iter()).for_each(|(u, v)| {
+        *u = v / nrm;
+    });
+    (1..n_mode as usize).for_each(|i| {
+        // ui = vi
+        u[i] = v[i].clone();
+        (0..i).for_each(|j| {
+            // uj.ui/uj.uj
+            let r = dot(&u[j], &u[i]) / dot(&u[j], &u[j]);
+            // ui = ui - (uj.ui/uj.uj)vj
+            let uj = u[j].clone();
+            u[i].iter_mut().zip(uj.iter()).for_each(|(ui, uj)| {
+                *ui -= r * *uj;
+            });
+        });
+        // ui.ui
+        let nrm = dot(&u[i], &u[i]).sqrt();
+        // ui = ui/ui.ui
+        u[i].iter_mut().for_each(|u| {
+            *u /= nrm;
+        });
+    });
+    u.iter().flat_map(|x| x.to_vec()).collect()
+}
+/// Gram-schmidt ortho-normalization with dot product function
+pub fn gram_schmidt_with_dot<F>(modes: &[f64], n_mode: usize, dot: F) -> Vec<f64>
+where
+    F: Fn(&[f64], &[f64]) -> f64,
+{
+    let n = modes.len() / n_mode;
+    let v: Vec<Vec<f64>> = modes.chunks(n).map(|x| x.to_vec()).collect();
+    // u: orthonormal basis
+    let mut u: Vec<Vec<f64>> = vec![0f64; n * n_mode as usize]
+        .chunks(n)
+        .map(|x| x.to_vec())
+        .collect();
     // v1.v1
     let nrm = dot(&v[0], &v[0]).sqrt();
     // u1 = v1/v1.v1
@@ -180,7 +216,7 @@ pub fn mgs_mode_set_on_mask(n_radial_order: u32, n_xy: usize, mask: &[f64]) -> V
         .collect();
     let u = gram_schmidt(&v, nz as usize);
     let mut v: Vec<Vec<f64>> = vec![vec![f64::NAN; n]; nz];
-    v.iter_mut().zip(u.chunks(u.len()/nz)).for_each(|(v, u)| {
+    v.iter_mut().zip(u.chunks(u.len() / nz)).for_each(|(v, u)| {
         v.iter_mut()
             .zip(mask)
             .filter(|(_, m)| !m.is_nan())
