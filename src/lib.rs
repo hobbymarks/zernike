@@ -367,3 +367,53 @@ pub fn jnm(n_radial_order: u32) -> (Vec<u32>, Vec<u32>, Vec<u32>) {
     });
     (j, n, m)
 }
+/// Surface filtering
+///
+/// Remove the first Zernike modes corresponding to `n_radial_order` from `surface` defined on the given (x,y) nodes
+pub fn filter(
+    surface: &[f64],
+    xy: impl Iterator<Item = (f64, f64)>,
+    n_radial_order: u32,
+) -> (Vec<f64>, Vec<f64>, Vec<f64>) {
+    let (j, n, m) = jnm(n_radial_order);
+    let mut zern = Vec::<f64>::new();
+    let (mut r, o): (Vec<_>, Vec<_>) = xy.map(|(x, y)| (x.hypot(y), y.atan2(x))).unzip();
+    let r_max = r.iter().cloned().reduce(|a, b| a.max(b)).unwrap();
+    r.iter_mut().for_each(|r| {
+        *r /= r_max;
+    });
+    for k in 0..j.len() {
+        zern.extend(
+            r.iter()
+                .zip(o.iter())
+                .map(|(&r, &o)| zernike(j[k], n[k], m[k], r, o)),
+        );
+    }
+    let zern_o = gram_schmidt(&zern, j.len());
+    let n_nodes = r.len();
+    let coefs = zern_o
+        .chunks(n_nodes)
+        .map(|z| {
+            z.iter()
+                .zip(surface.iter())
+                .fold(0f64, |c, (z, s)| c + z * s)
+        })
+        .collect::<Vec<f64>>();
+    let zern_surf =
+        zern_o
+            .chunks(n_nodes)
+            .zip(coefs.iter())
+            .fold(vec![0f64; n_nodes], |mut s, (z, c)| {
+                s.iter_mut().zip(z.iter()).for_each(|(s, z)| *s += z * c);
+                s
+            });
+    (
+        surface
+            .iter()
+            .zip(zern_surf.iter())
+            .map(|(s, z)| s - z)
+            .collect(),
+        coefs,
+        zern_o,
+    )
+}
