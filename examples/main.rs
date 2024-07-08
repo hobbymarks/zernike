@@ -1,7 +1,12 @@
-use plotters::prelude::*;
-use rayon::prelude::*;
+use plotters::{
+    backend::BitMapBackend,
+    chart::ChartBuilder,
+    drawing::IntoDrawingArea,
+    element::Rectangle,
+    style::{Color, HSLColor, BLACK, WHITE},
+};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::time::Instant;
-use zernike;
 
 fn correlation(n_radial_order: u32, n_xy: usize, zern: &[f64], filename: &str) {
     println!("Computing correlation matrix ...");
@@ -44,8 +49,7 @@ fn correlation(n_radial_order: u32, n_xy: usize, zern: &[f64], filename: &str) {
         .draw_series(
             corr.iter()
                 .zip(0..)
-                .map(|(l, y)| l.iter().zip(0..).map(move |(v, x)| (x as i32, y as i32, v)))
-                .flatten()
+                .flat_map(|(l, y)| l.iter().zip(0..).map(move |(v, x)| (x, y, v)))
                 .map(|(x, y, v)| {
                     Rectangle::new(
                         [(x, y), (x + 1, y + 1)],
@@ -76,9 +80,9 @@ fn main() {
             (x, y)
         })
         .collect();
-    println!("j: {:2?}",j);
-    println!("n: {:2?}",n);
-    println!("m: {:2?}",m);
+    println!("j: {:2?}", j);
+    println!("n: {:2?}", n);
+    println!("m: {:2?}", m);
 
     {
         println!("Computing Zernike mode set ...");

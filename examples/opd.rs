@@ -1,6 +1,11 @@
 use ndarray::Array1;
 use ndarray_npy::NpzReader;
-use plotters::prelude::*;
+use plotters::{
+    backend::BitMapBackend,
+    chart::ChartBuilder,
+    drawing::IntoDrawingArea,
+    style::{HSLColor, WHITE},
+};
 use std::fs::File;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -77,7 +82,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let z_max = opd_e.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
     let z_min = opd_e.iter().cloned().fold(f64::INFINITY, f64::min);
     //println!("Min-Max: [{:.3};{:.3}]",z_min,z_max);
-    let uz: Vec<f64> = opd_e.iter().map(|p| (p - z_min) / (z_max - z_min)).collect();
+    let uz: Vec<f64> = opd_e
+        .iter()
+        .map(|p| (p - z_min) / (z_max - z_min))
+        .collect();
     let xy: Vec<_> = (0..n_xy * n_xy)
         .map(|k| {
             let i = k / n_xy;

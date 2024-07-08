@@ -20,17 +20,17 @@ fn ln_gamma(f64: f64) -> f64 {
 
     // Polynomial coefficients for approximating the `gamma_ln` function
     let gamma_dk: &[f64] = &[
-        2.48574089138753565546e-5,
-        1.05142378581721974210,
-        -3.45687097222016235469,
-        4.51227709466894823700,
-        -2.98285225323576655721,
-        1.05639711577126713077,
-        -1.95428773191645869583e-1,
-        1.70970543404441224307e-2,
-        -5.71926117404305781283e-4,
-        4.63399473359905636708e-6,
-        -2.71994908488607703910e-9,
+        2.485_740_891_387_535_5e-5,
+        1.051_423_785_817_219_7,
+        -3.456_870_972_220_162_5,
+        4.512_277_094_668_948,
+        -2.982_852_253_235_766_4,
+        1.056_397_115_771_267,
+        -1.954_287_731_916_458_7e-1,
+        1.709_705_434_044_412e-2,
+        -5.719_261_174_043_057e-4,
+        4.633_994_733_599_057e-6,
+        -2.719_949_084_886_077_2e-9,
     ];
 
     let x: f64 = f64;
@@ -118,7 +118,7 @@ pub fn gram_schmidt(modes: &[f64], n_mode: usize) -> Vec<f64> {
     let n = modes.len() / n_mode;
     let v: Vec<Vec<f64>> = modes.chunks(n).map(|x| x.to_vec()).collect();
     // u: orthonormal basis
-    let mut u: Vec<Vec<f64>> = vec![0f64; n * n_mode as usize]
+    let mut u: Vec<Vec<f64>> = vec![0f64; n * n_mode]
         .chunks(n)
         .map(|x| x.to_vec())
         .collect();
@@ -130,9 +130,9 @@ pub fn gram_schmidt(modes: &[f64], n_mode: usize) -> Vec<f64> {
     u[0].iter_mut().zip(v[0].iter()).for_each(|(u, v)| {
         *u = v / nrm;
     });
-    (1..n_mode as usize).for_each(|i| {
+    (1..n_mode).for_each(|i| {
         // ui = vi
-        u[i] = v[i].clone();
+        u[i].clone_from(&v[i]);
         (0..i).for_each(|j| {
             // uj.ui/uj.uj
             let r = dot(&u[j], &u[i]) / dot(&u[j], &u[j]);
@@ -159,7 +159,7 @@ where
     let n = modes.len() / n_mode;
     let v: Vec<Vec<f64>> = modes.chunks(n).map(|x| x.to_vec()).collect();
     // u: orthonormal basis
-    let mut u: Vec<Vec<f64>> = vec![0f64; n * n_mode as usize]
+    let mut u: Vec<Vec<f64>> = vec![0f64; n * n_mode]
         .chunks(n)
         .map(|x| x.to_vec())
         .collect();
@@ -169,9 +169,9 @@ where
     u[0].iter_mut().zip(v[0].iter()).for_each(|(u, v)| {
         *u = v / nrm;
     });
-    (1..n_mode as usize).for_each(|i| {
+    (1..n_mode).for_each(|i| {
         // ui = vi
-        u[i] = v[i].clone();
+        u[i].clone_from(&v[i]);
         (0..i).for_each(|j| {
             // uj.ui/uj.uj
             let r = dot(&u[j], &u[i]) / dot(&u[j], &u[j]);
@@ -214,7 +214,7 @@ pub fn mgs_mode_set_on_mask(n_radial_order: u32, n_xy: usize, mask: &[f64]) -> V
                 .collect::<Vec<f64>>()
         })
         .collect();
-    let u = gram_schmidt(&v, nz as usize);
+    let u = gram_schmidt(&v, nz);
     let mut v: Vec<Vec<f64>> = vec![vec![f64::NAN; n]; nz];
     v.iter_mut().zip(u.chunks(u.len() / nz)).for_each(|(v, u)| {
         v.iter_mut()
@@ -347,10 +347,10 @@ pub fn jnm(n_radial_order: u32) -> (Vec<u32>, Vec<u32>, Vec<u32>) {
     let mut j: Vec<u32> = vec![];
     let mut n: Vec<u32> = vec![];
     let mut m: Vec<u32> = vec![];
-    (1..=n_radial_order).into_iter().for_each(|nro| {
+    (1..=n_radial_order).for_each(|nro| {
         (0..nro).step_by(2).for_each(|k| {
             let odd_even = (nro - 1) % 2;
-            let j_last = 1 + j.last().or(Some(&0u32)).unwrap();
+            let j_last = 1 + j.last().unwrap_or(&0u32);
             if k == 0 && odd_even == 0 {
                 j.push(j_last);
                 n.push(nro - 1);
